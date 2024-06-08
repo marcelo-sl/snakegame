@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Jogo da cobrinha</title>
+</head>
+<style> 
+	:root {
+		--header-background-color: #111;
+		--border-color: #222;
+		--border-width: 1px;
+	}
+	
+	body {
+		margin: 0;
+		padding:0;
+		box-sizing: border-box;
+		display: flex; 
+		width: 100vw;
+		height: 100vh;
+		align-items: center; 
+		justify-content: center; 
+		background-color: black;
+		color: #bbb;
+		font-family: 'consolas'; 
+		font-size: 20px;
+	}
+
+	.container {
+		border: var(--border-width) solid var(--border-color);
+		border-radius: 12px;
+	}
+
+	#header {
+		background-color: var(--header-background-color);
+		margin: 0;
+		padding: 8px 0;
+		text-align: center;
+		font-weight: bolder;
+		font-size: 28px;
+	}
+	
+	#info {
+		display: flex;
+		width: 560px;
+		margin: 0 20px;
+		justify-content: space-between;
+	}	
+
+	#stage {
+		border-top: var(--border-width) solid var(--border-color);
+	}
+</style>
+<body>
+	<div class="container">
+		<p id="header">Snake Game</p>
+		<div id="info">
+			<p>High score: <span id="score">0</span></p>
+			<p>Speed: <span id="speed">0</span>x</p>
+			<p id="display">00:00:00</p>
+		</div>
+		<canvas id="stage" width="600" height="600"></canvas>
+	</div>
+
+	<script type="text/javascript">		
+		window.onload = function() {
+			// Game
+			var stage = document.getElementById('stage');
+			var ctx = stage.getContext("2d");
+
+			// Speed
+			let speedInMs = 100;
+			let speedSpan = document.getElementById('speed');
+			let displaySpeed = (100 - speedInMs) / 10;
+			speedSpan.innerHTML = displaySpeed > 0 ? displaySpeed : 1;
+
+			// Score
+			let highScore = 0
+
+			function setScore(score) {
+				let computedScore = score - beginSize;
+
+				if (computedScore <= highScore) return;
+
+				let scoreSpan = document.getElementById('score');
+				scoreSpan.innerHTML = computedScore;
+				highScore = computedScore;
+			}
+
+			var beginSize = 2;
+			var startedMove = false;
+			var gameOver = false;
+			var tail = beginSize;
+			document.addEventListener("keydown", keyPush);
+			setInterval(game, speedInMs);
+
+			const vel = 1;
+
+			var vx = vy = 0;
+			var px =10;
+			var py = 15;
+			var tp = 30;
+			var qp = 20;
+			var appleX=appleY=15;
+
+			var trail = [];
+
+			let timer;
+			let milliseconds = 0;
+			let seconds = 0;
+			let minutes = 0;
+
+			function startTimer() {
+				clearInterval(timer);
+				timer = setInterval(updateTime, 10);
+			}
+
+			function pauseTimer() {
+				clearInterval(timer);
+			}
+
+			function resetTimer() {
+				clearInterval(timer);
+				milliseconds = 0;
+				seconds = 0;
+				minutes = 0;
+				document.getElementById("display").innerText = "00:00:00";
+			}
+
+			function updateTime() {
+				milliseconds += 10;
+
+				if (milliseconds === 1000) {
+					seconds++;
+					milliseconds = 0;
+				}
+
+				if (seconds === 60) {
+					minutes++;
+					seconds = 0;
+				}
+
+				const formattedTime = `${pad(minutes)}:${pad(seconds)}:${pad(milliseconds / 10)}`;
+				document.getElementById("display").innerText = formattedTime;
+			}
+
+			function pad(number) {
+				return number < 10 ? `0${number}` : number;
+			}
+
+			function game() {				
+				if (startedMove) startTimer();
+
+				px += vx;
+				py += vy;
+				if (px <0) {
+					px = qp-1;
+				}
+				if (px > qp-1) {
+					px = 0;
+				}
+				if (py < 0) {
+					py = qp-1;
+				}
+				if (py > qp-1) {
+					py = 0;
+				}
+
+				ctx.fillStyle = "black";
+				ctx.fillRect(0,0, stage.width, stage.height);
+
+				ctx.fillStyle = "red";
+				ctx.fillRect(appleX*tp, appleY*tp, tp,tp);
+
+				ctx.fillStyle = "green";
+				for (var i = 0; i < trail.length; i++) {
+					ctx.fillRect(trail[i].x*tp, trail[i].y*tp, tp-1,tp-1);
+					if (trail[i].x == px && trail[i].y == py)
+					{
+						if (startedMove) gameOver = true;
+						vx = vy=0;
+						tail = beginSize;
+						pauseTimer();
+					}
+				}
+
+				trail.push({x:px,y:py })
+				while (trail.length > tail) {
+					trail.shift();
+				}
+
+				if (appleX==px && appleY==py){
+					tail++;
+					appleX = Math.floor(Math.random()*qp);
+					appleY = Math.floor(Math.random()*qp);
+					setScore(tail);
+				}
+
+			}
+
+			function startGame() {
+				startedMove = true;
+				
+				if (gameOver) {
+					resetTimer();
+					gameOver = false;
+				}
+			}
+
+			function keyPush(event){
+				switch (event.keyCode) {
+					case 37: // Left
+						vx = -vel;
+						vy = 0;
+						startGame();
+						break;
+					case 38: // up
+						vx = 0;
+						vy = -vel;
+						startGame();
+						break;
+					case 39: // right
+						vx = vel;
+						vy = 0;
+						startGame();
+						break;
+					case 40: // down
+						vx = 0;
+						vy = vel;
+						startGame();
+						break;
+					default:
+						break;
+				}
+			}
+		}
+	</script>
+</body>
+</html>
